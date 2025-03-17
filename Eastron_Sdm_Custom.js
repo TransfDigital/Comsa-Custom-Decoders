@@ -1,3 +1,12 @@
+/**
+ *  NOT TESTED!!!
+ * Payload Decoder for Chirpstack v4 & TTN adapted for CSER IoT Platform. Rev 11/03/2022 - MRV
+ *
+ * Copyright 2024 COMSA Service Facility Management
+ *
+ * @product Eastron SDM Electricity Meters
+ */
+
 var batches = [
     [
         {
