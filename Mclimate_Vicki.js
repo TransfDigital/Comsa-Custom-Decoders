@@ -715,4 +715,4 @@ function encodeDownlink(input) {
   return {
     bytes: bytes
   };
-}º
+}
