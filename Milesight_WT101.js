@@ -1,5 +1,5 @@
 /**
- * Payload Decoder for Multiple Platforms (Chirpstack v4 & v3, TTN) adapted for CSER IoT Platform. Rev 26/03/2025 - MRV
+ * Payload Decoder for Multiple Platforms (Chirpstack v4 & v3, TTN) adapted for CSER IoT Platform. Rev 19/05/2025 - MRV
  *
  * Copyright 2024 COMSA Service Facility Management
  *

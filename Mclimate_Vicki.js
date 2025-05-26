@@ -1,6 +1,6 @@
 /**
  *  NOT TESTED!!!
- * Payload Decoder for Chirpstack v4 & TTN adapted for CSER IoT Platform. Rev 19/05/2025 - MRV
+ * Payload Decoder for Chirpstack v4 & TTN adapted for CSER IoT Platform. Rev 26/05/2025 - MRV
  *
  * Copyright 2024 COMSA Service Facility Management
  *
@@ -698,6 +698,7 @@ function encodeDownlink(input) {
       case "setValveOpenness": {
         bytes.push(0x4e);
         bytes.push(input.data.setValveOpenness);
+        break;
       }
       case "sendCustomHexCommand": {
         let sendCustomHexCommand = input.data.sendCustomHexCommand;
