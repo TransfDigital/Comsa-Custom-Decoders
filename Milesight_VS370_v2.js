@@ -1,5 +1,5 @@
 /**
- * Payload Decoder for Multiple Platforms (Chirpstack v4 & v3, TTN) adapted for CSER IoT Platform v2. Rev 19/11/2025 - MRV
+ * Payload Decoder for Multiple Platforms (Chirpstack v4 & v3, TTN) adapted for CSER IoT Platform v2. Rev 01/12/2025 - MRV
  *
  * Copyright 2025 COMSA Service Facility Management
  *
@@ -434,8 +434,8 @@ function readHexString(bytes) {
 function getValue(map, key) {
     if (RAW_VALUE) return key;
 
-    var value = map[key];
-    if (!value) value = "unknown";
+    var value = map.hasOwnProperty(key) ? map[key] : "unkown";
+
     return value;
 }
 
