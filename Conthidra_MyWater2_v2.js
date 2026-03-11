@@ -1,7 +1,8 @@
 /**
- * Payload Decoder for Multiple Platforms (Chirpstack v4 & v3, TTN) adapted for Node-RED Ports. Rev 12/12/25 - MRV
+ * 
+ * Payload Decoder for Multiple Platforms (Chirpstack v4 & v3, TTN) adapted for CSER IoT Platform v2. Rev 09/03/2026 - MRV
  *
- * Copyright 2025 COMSA Service Facility Management
+ * Copyright 2026 COMSA Service Facility Management
  *
  * @product Conthidra MyWater 2.0
  */
@@ -38,122 +39,130 @@ var pulseRateDict = {
 
 // Chirpstack v4
 function decodeUplink(input) {
-    var decoded = deviceDecoder(input.bytes);
+    var decoded = myWaterDecode(input.bytes);
     return { data: decoded };
 }
 
 // Chirpstack v3
 function Decode(fPort, bytes) {
-    return deviceDecoder(bytes);
+    return myWaterDecode(bytes);
 }
 
 // The Things Network
 function Decoder(bytes, port) {
-    return deviceDecoder(bytes);
+    return myWaterDecode(bytes);
 }
 
 // ---------- Main Decode ----------
-function deviceDecoder(bytes) {
-  var objectJson = {};
+function myWaterDecode(bytes) {
+  var decoded = {};
 
-  objectJson.frameVersion = ((bytes[0] >> 4) & 0x0F).toString();
+  // decoded.frameVersion = ((bytes[0] >> 4) & 0x0F).toString();
 
   // ES5 pad to 2 hex digits, uppercase
   var fwMajor = (bytes[0] & 0x0F).toString(16).toUpperCase();
   if (fwMajor.length === 1) fwMajor = "0" + fwMajor;
   var fwMinor = bytes[1].toString(16).toUpperCase();
   if (fwMinor.length === 1) fwMinor = "0" + fwMinor;
-  objectJson.firmwareVersion = fwMajor + "." + fwMinor;
+  // decoded.firmwareVersion = fwMajor + "." + fwMinor;
 
   // devSN: 4 bytes LE -> safe 32-bit
-  objectJson.devSN = readUInt32LE(bytes, 2).toString();
+  // decoded.devSN = readUInt32LE(bytes, 2).toString();
 
   // meterSN: 5 bytes LE -> may exceed 2^32-1, return decimal string
-  objectJson.meterSN = readUIntLE_asDecString(bytes, 6, 5);
+  // decoded.meterSN = readUIntLE_asDecString(bytes, 6, 5);
 
   // timestamp at offset 11 (uint32 LE)
   var seconds = readUInt32LE(bytes, 11);
   var dateTime = new Date(1970, 0, 1, 1, 0, 0, 0);
   dateTime.setUTCSeconds(seconds);
-  objectJson.dateTime = dateTime;
+  // decoded.dateTime = dateTime;
 
   // alarms
-  objectJson.alarms = {};
+  // decoded.alarms = {};
   // byte 15: bits 0..7
-  for (var a = 0; a < 8; a++) {
-    objectJson.alarms[alarmsList[a]] = !!(bytes[15] & (1 << a));
-  }
+  // for (var a = 0; a < 8; a++) {
+  //   decoded.alarms[alarmsList[a]] = !!(bytes[15] & (1 << a));
+  // }
   // byte 16: bits 4..7 map to next 4 alarms
-  for (a = 0; a < 4; a++) {
-    objectJson.alarms[alarmsList[a + 8]] = !!(bytes[16] & (0x10 << a));
-  }
+  // for (a = 0; a < 4; a++) {
+  //   decoded.alarms[alarmsList[a + 8]] = !!(bytes[16] & (0x10 << a));
+  // }
 
   // battery (low nibble of byte 16)
-  objectJson.battery = batteryList[bytes[16] & 0x0F];
+  decoded.battery = batteryList[bytes[16] & 0x0F];
 
   // 12 deltas: int16 LE from offset 17
-  objectJson.deltaValues = [];
+  var deltaValues = [];
   for (var d = 0; d < 12; d++) {
     var delta = readInt16LE(bytes, 17 + d * 2);
     if (delta === -32768) delta = "NV";
-    objectJson.deltaValues.push(delta);
+    deltaValues.push(delta);
   }
 
   // profile / period (byte 41)
+  var profile, period;
   if (!(bytes[41] & 0x10)) {
-    objectJson.profile = "Standard";
-    objectJson.period = (bytes[41] & 0x01) ? "00h - 12h" : "12h - 00h";
+    profile = "Standard";
+    period = (bytes[41] & 0x01) ? "00h - 12h" : "12h - 00h";
   } else {
-    objectJson.profile = "Extreme";
-    var period = bytes[41] & 0x0F;
+    profile = "Extreme";
+    period = bytes[41] & 0x0F;
     switch (period) {
-      case 0: objectJson.period = "21h - 00h"; break;
-      case 1: objectJson.period = "00h - 03h"; break;
-      case 2: objectJson.period = "03h - 06h"; break;
-      case 3: objectJson.period = "06h - 09h"; break;
-      case 4: objectJson.period = "09h - 12h"; break;
-      case 5: objectJson.period = "12h - 15h"; break;
-      case 6: objectJson.period = "15h - 18h"; break;
-      case 7: objectJson.period = "18h - 21h"; break;
-      default: objectJson.period = undefined; break;
+      case 0: period = "21h - 00h"; break;
+      case 1: period = "00h - 03h"; break;
+      case 2: period = "03h - 06h"; break;
+      case 3: period = "06h - 09h"; break;
+      case 4: period = "09h - 12h"; break;
+      case 5: period = "12h - 15h"; break;
+      case 6: period = "15h - 18h"; break;
+      case 7: period = "18h - 21h"; break;
+      default: period = undefined; break;
     }
   }
 
   // 20-bit signed offset: bytes 42,43, and high nibble of 44
   var offset = (bytes[42] << 12) | (bytes[43] << 4) | (bytes[44] >> 4);
-  objectJson.offsetini = offset;
   if (offset & 0x80000) {
     // sign-extend 20-bit to 32-bit
     offset |= 0xFFF00000;
   }
-  objectJson.offset = offset;
+  // decoded.offset = offset;
 
   // pulseRate from low nibble of byte 44
-  objectJson.pulseRate = pulseRateDict[bytes[44] & 0x0F];
+  // decoded.pulseRate = pulseRateDict[bytes[44] & 0x0F];
 
   // pulseCount: int32 LE at 45
   var pulseCount = readInt32LE(bytes, 45);
-  objectJson.pulseCount = pulseCount;
+  // decoded.pulseCount = pulseCount;
 
   // idx = pulseCount + offset
-  objectJson.idx = pulseCount + offset;
-
-  // As requested: do NOT guard spreadFactor
-  objectJson.spreadFactor = LoRaObject.txInfo.dataRate.spreadFactor;
+  decoded.volume_water = (pulseCount + offset) * 0.001; // Scalefactor to obtain m3
   
   //Add times for deltas
-  var timesObject = timesCalculator(objectJson);
-  objectJson.deltaTimes = timesObject.deltaTimes;
-  objectJson.startPeriodTime = timesObject.startPeriodTime;
-  objectJson.endPeriodTime = timesObject.endPeriodTime;
+  var timesObject = timesCalculator(period, dateTime, profile);
+  decoded.volume_water_delta = [];
+  var i;
+  for (i = 0; i < deltaValues.length; i++) {
+    if (deltaValues[i] !== "NV") {
+      var record = {
+        value: deltaValues[i] * 0.001,              // Scalefactor to obtain m3
+        ts: timesObject.deltaTimes[i].getTime()     // Ts in Unix Milliseconds
+      };
+      decoded.volume_water_delta.push(record);
+    }
+  }
+  // decoded.deltaTimes = timesObject.deltaTimes;
+  // decoded.startPeriodTime = timesObject.startPeriodTime;
+  // decoded.endPeriodTime = timesObject.endPeriodTime;
 
-  return objectJson;
+  return decoded;
 }
 
 // ---------- Times Enricher for deltas ----------
 
 
-function timesCalculator(objectJson) {
+function timesCalculator(period, dateTime, profile) {
   var timesObject = {};
   
   // Extract the starting and ending hours from the period string.
@@ -162,18 +171,18 @@ function timesCalculator(objectJson) {
   //  - "00h - 03h", "03h - 06h", ... for Extreme profile
   // substring(0,2) => first two chars (start hour)
   // substring(6,8) => chars at positions 6..7 (end hour)
-  var startPeriodHour = parseInt(objectJson.period.substring(0, 2), 10);
-  var endPeriodHour   = parseInt(objectJson.period.substring(6, 8), 10);
+  var startPeriodHour = parseInt(period.substring(0, 2), 10);
+  var endPeriodHour   = parseInt(period.substring(6, 8), 10);
   
-  // Build the start period Date using the base timestamp (objectJson.dateTime)
+  // Build the start period Date using the base timestamp (dateTime)
   // and set it to the exact hour, minute and second boundaries in UTC.
-  var startPeriodDateTime = new Date(objectJson.dateTime);
+  var startPeriodDateTime = new Date(dateTime);
   startPeriodDateTime.setUTCSeconds(0);
   startPeriodDateTime.setUTCMinutes(0);
   startPeriodDateTime.setUTCHours(startPeriodHour);
   
   // Build the end period Date similarly (same base date, different hour).
-  var endPeriodDateTime = new Date(objectJson.dateTime);
+  var endPeriodDateTime = new Date(dateTime);
   endPeriodDateTime.setUTCSeconds(0);
   endPeriodDateTime.setUTCMinutes(0);
   endPeriodDateTime.setUTCHours(endPeriodHour);
@@ -192,7 +201,7 @@ function timesCalculator(objectJson) {
   // Step size (in seconds) depends on the profile:
   //  - Standard: hourly steps (3600 s)
   //  - Extreme: 15-minute steps (900 s)
-  var step = objectJson.profile === "Standard" ? 60 * 60 : 15 * 60;
+  var step = profile === "Standard" ? 60 * 60 : 15 * 60;
   
   // Build the array of Date objects representing each step within the period.
   var deltaTimes = [];

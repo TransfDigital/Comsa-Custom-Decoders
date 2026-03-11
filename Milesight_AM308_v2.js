@@ -1,5 +1,5 @@
 /**
- * Payload Decoder for Multiple Platforms (Chirpstack v4 & v3, TTN) adapted for CSER IoT Platform v2. Rev 08/01/2026 - MRV
+ * Payload Decoder for Multiple Platforms (Chirpstack v4 & v3, TTN) adapted for CSER IoT Platform. Rev 11/03/2026 - MRV
  *
  * Copyright 2024 COMSA Service Facility Management
  *
@@ -30,21 +30,13 @@ function milesightDeviceDecode(bytes) {
         var channel_type = bytes[i++];
         // BATTERY
         if (channel_id === 0x01 && channel_type === 0x75) {
-            decoded.battery = {
-                "value": bytes[i],
-                "unit": "%",
-                "name": "Bateria"
-            };
+            decoded.battery = bytes[i];
             i += 1;
         }
         // TEMPERATURE
         else if (channel_id === 0x03 && channel_type === 0x67) {
             // ℃
-            decoded.temperature = {
-                "value": readInt16LE(bytes.slice(i, i + 2)) / 10,
-                "unit": "ºC",
-                "name": "Temperatura"
-            };
+            decoded.temperature = readInt16LE(bytes.slice(i, i + 2)) / 10;
             i += 2;
 
             // ℉
@@ -53,150 +45,70 @@ function milesightDeviceDecode(bytes) {
         }
         // HUMIDITY
         else if (channel_id === 0x04 && channel_type === 0x68) {
-            decoded.relHumidity = {
-                "value": bytes[i] / 2,
-                "unit": "%",
-                "name": "Humitat relativa"
-            };
+            decoded.relHumidity = bytes[i] / 2;
             i += 1;
         }
         // PIR
         else if (channel_id === 0x05 && channel_type === 0x00) {
-            decoded.motion = {
-                "value": bytes[i],
-                "unit": "-",
-                "name": "Moviment"
-            };
+            decoded.motion = bytes[i];
             i += 1;
         }
         // LIGHT
         else if (channel_id === 0x06 && channel_type === 0xcb) {
-            decoded.light_level = {
-                "value": bytes[i],
-                "unit": "-",
-                "name": "Index iluminacio"
-            };
+            decoded.light_level = bytes[i];
             i += 1;
         }
         // CO2
         else if (channel_id === 0x07 && channel_type === 0x7d) {
             var co2 = readUInt16LE(bytes.slice(i, i + 2));
             if (co2 < 10000 && co2 > 100){
-                decoded.co2 = {
-                    "value": co2,
-                    "unit": "ppm",
-                    "name": "Concentracio CO2"
-                };
+                decoded.co2 = co2;
             }
             i += 2;
         }
         // TVOC (iaq)
         else if (channel_id === 0x08 && channel_type === 0x7d) {
-            decoded.tvoc_level = {
-                "value": readUInt16LE(bytes.slice(i, i + 2)) / 100,
-                "unit": "-",
-                "name": "Index concentracio TVOC"
-            };
+            decoded.tvoc_level = readUInt16LE(bytes.slice(i, i + 2)) / 100;
             i += 2;
         }
         // TVOC (ug/m3)
         else if (channel_id === 0x08 && channel_type === 0xe6) {
-            decoded.tvoc = {
-                "value": readUInt16LE(bytes.slice(i, i + 2)),
-                "unit": "ug/m3",
-                "name": "Concentracio TVOC"
-            };
+            decoded.tvoc = readUInt16LE(bytes.slice(i, i + 2));
             i += 2;
         }
         // PRESSURE
         else if (channel_id === 0x09 && channel_type === 0x73) {
-            decoded.barPressure = {
-                "value": readUInt16LE(bytes.slice(i, i + 2)) / 10,
-                "unit": "hPa",
-                "name": "Pressio barometrica"
-            };
+            decoded.barPressure = readUInt16LE(bytes.slice(i, i + 2)) / 10;
             i += 2;
         }
         // PM2.5
         else if (channel_id === 0x0b && channel_type === 0x7d) {
-            decoded.pm25 = {
-                "value": readUInt16LE(bytes.slice(i, i + 2)),
-                "unit": "ug/m3",
-                "name": "Concentracio PM2.5"
-            };
+            decoded.pm25 = readUInt16LE(bytes.slice(i, i + 2));
             i += 2;
         }
         // PM10
         else if (channel_id === 0x0c && channel_type === 0x7d) {
-            decoded.pm10 = {
-                "value": readUInt16LE(bytes.slice(i, i + 2)),
-                "unit": "ug/m3",
-                "name": "Concentracio PM10"
-            };
+            decoded.pm10 = readUInt16LE(bytes.slice(i, i + 2));
             i += 2;
         }
         // HISTORY DATA (AM308)
         else if (channel_id === 0x20 && channel_type === 0xce) {
             var data = {};
-            data.timestamp = {
-                "value": readUInt32LE(bytes.slice(i, i + 4)),
-                "unit": "unix_s",
-                "name": "Timestamp unix segons"
-            };
-            data.temperature = {
-                "value": readInt16LE(bytes.slice(i + 4, i + 6)) / 10,
-                "unit": "ºC",
-                "name": "Temperatura"
-            };
-            data.relHumidity = {
-                "value": readUInt16LE(bytes.slice(i + 6, i + 8)) / 2,
-                "unit": "%",
-                "name": "Humitat relativa"
-            };
-            data.occupancy = {
-                "value": bytes[i + 8],
-                "unit": "-",
-                "name": "Ocupacio"
-            };
-            data.light_level = {
-                "value": bytes[i + 9],
-                "unit": "-",
-                "name": "Index iluminacio"
-            };
+            data.timestamp = readUInt32LE(bytes.slice(i, i + 4));
+            data.temperature = readInt16LE(bytes.slice(i + 4, i + 6)) / 10;
+            data.relHumidity = readUInt16LE(bytes.slice(i + 6, i + 8)) / 2;
+            data.occupancy = bytes[i + 8];
+            data.light_level = bytes[i + 9];
             var co2_value_ts = readUInt16LE(bytes.slice(i + 10, i + 12));
             if (co2_value_ts < 10000) {
-                data.co2 = {
-                    "value": co2_value_ts,
-                    "unit": "ppm",
-                    "name": "Concentracio CO2"
-                };
+                data.co2 = co2_value_ts;
             }
-            data.co2 = {
-                "value": readUInt16LE(bytes.slice(i + 10, i + 12)),
-                "unit": "ppm",
-                "name": "Concentracio CO2"
-            };
+            data.co2 = readUInt16LE(bytes.slice(i + 10, i + 12));
             // unit: iaq
-            data.tvoc_level = {
-                "value": readUInt16LE(bytes.slice(i + 12, i + 14)) / 100,
-                "unit": "-",
-                "name": "Index concentracio TVOC"
-            };
-            data.barPressure = {
-                "value": readUInt16LE(bytes.slice(i + 14, i + 16)) / 10,
-                "unit": "hPa",
-                "name": "Pressio barometrica"
-            };
-            data.pm25 = {
-                "value": readUInt16LE(bytes.slice(i + 16, i + 18)),
-                "unit": "ug/m3",
-                "name": "Concentracio PM2.5"
-            };
-            data.pm10 = {
-                "value": readUInt16LE(bytes.slice(i + 18, i + 20)),
-                "unit": "ug/m3",
-                "name": "Concentracio PM10"
-            };
+            data.tvoc_level = readUInt16LE(bytes.slice(i + 12, i + 14)) / 100;
+            data.barPressure = readUInt16LE(bytes.slice(i + 14, i + 16)) / 10;
+            data.pm25 = readUInt16LE(bytes.slice(i + 16, i + 18));
+            data.pm10 = readUInt16LE(bytes.slice(i + 18, i + 20));
             i += 20;
 
             decoded.history = decoded.history || [];
@@ -243,4 +155,3 @@ function readInt32LE(bytes) {
     var ref = readUInt32LE(bytes);
     return ref > 0x7fffffff ? ref - 0x100000000 : ref;
 }
-
